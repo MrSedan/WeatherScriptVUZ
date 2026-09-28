@@ -1,0 +1,59 @@
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import Session
+from sqlalchemy import String, DateTime, Date, Float, create_engine, func, select
+from datetime import date, datetime
+from typing import Dict
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class WeatherForecast(Base):
+    __tablename__ = 'weather_forecast'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    city: Mapped[str] = mapped_column(String())
+    forecast_date: Mapped[date] = mapped_column(Date())
+    temp_min: Mapped[float] = mapped_column(Float())
+    temp_max: Mapped[float] = mapped_column(Float())
+    humidity: Mapped[float] = mapped_column(Float())
+    wind_speed: Mapped[float] = mapped_column(Float())
+    description: Mapped[str] = mapped_column(String())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now())
+
+
+def save_forecast(engine, city: str, days: Dict[str, Dict]) -> int:
+    saved = 0
+    with Session(engine) as session:
+        for day_str, values in days.items():
+            forecast_date = date.fromisoformat(day_str)
+            exists = session.execute(
+                select(WeatherForecast.id).where(
+                    WeatherForecast.city == city,
+                    WeatherForecast.forecast_date == forecast_date,
+                )
+            ).first()
+            if exists is not None:
+                continue
+            session.add(WeatherForecast(
+                city=city,
+                forecast_date=forecast_date,
+                temp_min=values["min_temp"],
+                temp_max=values["max_temp"],
+                humidity=values["humidity"],
+                wind_speed=values["max_wind"],
+                description=values["description"],
+            ))
+            saved += 1
+        session.commit()
+    return saved
+
+
+def create_db_and_tables(db_url):
+    engine = create_engine(db_url, echo=True)
+    Base.metadata.create_all(engine)
+    return engine
