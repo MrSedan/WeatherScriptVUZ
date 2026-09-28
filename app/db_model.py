@@ -54,6 +54,6 @@ def save_forecast(engine, city: str, days: Dict[str, Dict]) -> int:
 
 
 def create_db_and_tables(db_url):
-    engine = create_engine(db_url, echo=True)
+    engine = create_engine(db_url, echo=False)
     Base.metadata.create_all(engine)
     return engine

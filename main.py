@@ -1,4 +1,4 @@
-from app import get_ipinfo, get_weather, create_db_and_tables, save_forecast
+from app import get_ipinfo, get_weather, create_db_and_tables, save_forecast, export_to_markdown
 from dotenv import load_dotenv
 import os
 
@@ -9,11 +9,12 @@ GEO_API_FALLBACK_CITY = ""
 DB_URL = ""
 DB_USER = ""
 DB_PASSWORD = ""
+OUTPUT_FILE = ""
 
 
 def setup():
     global WEATHER_API_KEY, GEO_API_FALLBACK_CITY, GEO_API_URL
-    global DB_PASSWORD, DB_URL, DB_USER, WEATHER_API_BASE_URL
+    global DB_PASSWORD, DB_URL, DB_USER, WEATHER_API_BASE_URL, OUTPUT_FILE
     load_dotenv()
     weather_key = os.getenv('WEATHER_API_KEY', '')
     if not weather_key:
@@ -43,6 +44,8 @@ def setup():
     DB_USER = os.getenv("DB_USER", '')
     DB_PASSWORD = os.getenv("DB_PASSWORD", '')
 
+    OUTPUT_FILE = os.getenv("OUTPUT_FILE", "weather_report.md")
+
     return create_db_and_tables(DB_URL)
 
 
@@ -65,6 +68,11 @@ def main():
     saved_count = save_forecast(engine, city, weather)
     print(f"Город: {city}")
     print(f"Сохранено новых записей: {saved_count}")
+
+    # Выгрузка в Markdown
+    total_records = export_to_markdown(engine, city, OUTPUT_FILE)
+    print(f"Экспортировано записей: {total_records}")
+    print(f"Файл отчёта: {OUTPUT_FILE}")
 
 
 if __name__ == "__main__":
